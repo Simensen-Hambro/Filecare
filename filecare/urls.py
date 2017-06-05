@@ -15,9 +15,10 @@ Including another URLconf
 """
 from django.conf.urls import url
 from django.contrib import admin
-from filecare.views import list_view
+from filecare.views import list_view, list_root
 
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
     url(r'^list/(?P<uuid>[a-f0-9\-]{36})/$',list_view, name="list-dir"),
+    url(r'^list/$', list_root),
 ]

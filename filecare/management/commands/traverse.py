@@ -1,34 +1,1 @@
-import os
-
-from django.conf import settings
-from django.core.management.base import BaseCommand
-
-from filecare.models import Node
-
-
-class Command(BaseCommand):
-	help = 'Traverse '
-
-	def handle(self, *args, **options):
-		root = settings.ROOT_DIRECTORY
-
-		# Create root node
-		current_node = Node.objects.create(path=root, directory=True)
-
-		current_level = [current_node]
-		next_level = []
-		while current_level:
-			current_node = current_level.pop()
-			for f in os.listdir(current_node.path):
-				new_path = current_node.path + "/" + f
-				if (os.path.isdir(new_path)):
-					new_node = Node.objects.create(path=new_path, parent=current_node, directory=True)
-					next_level.append(new_node)
-				else:
-					new_node = Node.objects.create(path=new_path, parent=current_node, directory=False)
-
-			if not current_level:
-				current_level = next_level
-				next_level = []
-
-		print("Current dir: " + str(os.getcwd()))
+import osfrom django.conf import settingsfrom django.core.management.base import BaseCommandfrom filecare.models import Nodeclass TreeNode():	def __init__(self, pk, path):		self.pk = pk		self.path = path		self.children = set()		self.size = 0	def calculate_size(self):		filesize = 0		for child in self.children:			if os.path.isdir(child.path):				filesize += child.calculate_size()			else:				child_filesize = os.path.getsize(child.path)				if child.size != child_filesize:					Node.objects.filter(absolute_path=child.path).update(size=child_filesize)				filesize += child_filesize		if self.size != filesize:			Node.objects.filter(absolute_path=self.path).update(size=filesize)		return filesizeclass Command(BaseCommand):	def handle(self, *args, **options):		root = settings.ROOT_DIRECTORY		# Create root node		try:			root_node = Node.objects.get(absolute_path=root)		except Node.DoesNotExist:			root_node = Node.objects.create(absolute_path=root, directory=True, parent=None)		existing_nodes_set = set()		existing_nodes_dict = {}		for node in Node.objects.all():			existing_nodes_set.add(node.absolute_path)			tree_node = TreeNode(node.pk, node.absolute_path)			tree_node.size = node.size			existing_nodes_dict[node.absolute_path] = tree_node		existing_nodes_set.remove(root)		current_level = set()		root_node = TreeNode(root_node.pk, root)		current_level.add(root_node)		next_level = set()		while current_level:			current_node = current_level.pop()			for f in os.listdir(current_node.path):				new_path = current_node.path + "/" + f				# Continue if the file is hidden				if f.startswith('.'):					continue				# If node already exists, continue				if new_path in existing_nodes_set:					existing_nodes_set.remove(new_path)					tree_node = existing_nodes_dict[new_path]					current_node.children.add(tree_node)					if os.path.isdir(tree_node.path):						next_level.add(tree_node)					continue				if (os.path.isdir(new_path)):					new_node = Node.objects.create(absolute_path=new_path, parent_id=current_node.pk, directory=True)					new_tree_node = TreeNode(new_node.pk, new_path)					next_level.add(new_tree_node)				else:					new_node = Node.objects.create(absolute_path=new_path, parent_id=current_node.pk, directory=False)					new_tree_node = TreeNode(new_node.pk, new_path)				current_node.children.add(new_tree_node)			if not current_level:				current_level = next_level				next_level = set()		root_node.calculate_size()		Node.objects.filter(absolute_path__in=existing_nodes_set).delete()		print("Done")
