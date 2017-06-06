@@ -13,7 +13,7 @@ Including another URLconf
     1. Import the include() function: from django.conf.urls import url, include
     2. Add a URL to urlpatterns:  url(r'^blog/', include('blog.urls'))
 """
-from django.conf.urls import url
+from django.conf.urls import url, include
 from django.contrib import admin
 from filecare.views import list_view, list_root
 
@@ -21,4 +21,5 @@ urlpatterns = [
     url(r'^admin/', admin.site.urls),
     url(r'^list/(?P<uuid>[a-f0-9\-]{36})/$',list_view, name="list-dir"),
     url(r'^list/$', list_root),
+    url(r'^share/', include('portal.urls', namespace='portal'))
 ]

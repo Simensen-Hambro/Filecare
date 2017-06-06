@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'filecare',
+    'portal',
 ]
 
 MIDDLEWARE = [
@@ -120,4 +121,5 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 
-ROOT_DIRECTORY = '/Users/martsime/Desktop/Filecare/RootDir'
+ROOT_DIRECTORY = os.environ.get('ROOT_DIRECTORY') or ''
+ROOT_SHARE_PATH = os.environ.get('ROOT_SHARE_PATH') or ''
