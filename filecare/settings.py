@@ -83,16 +83,24 @@ DATABASES = {
 }
 '''
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': 'filecare',
-        'USER': 'martsime',
-        'PASSWORD': '',
-        'HOST': 'localhost',
-        'PORT': '5432',
+if os.environ.get('SIMPLE_DATABASE'):
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        }
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql_psycopg2',
+            'NAME': 'filecare',
+            'USER': 'martsime',
+            'PASSWORD': '',
+            'HOST': 'localhost',
+            'PORT': '5432',
+        }
+    }
 
 
 
@@ -133,7 +141,6 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/1.11/howto/static-files/
 
 STATIC_URL = '/static/'
-ROOT_DIRECTORY = os.environ.get('ROOT_DIRECTORY') or ''
-ROOT_SHARE_PATH = os.environ.get('ROOT_SHARE_PATH') or ''
-
+ROOT_DIRECTORY = os.environ.get('ROOT_DIRECTORY') or '/tmp/'
+ROOT_SHARE_PATH = os.environ.get('ROOT_SHARE_PATH') or '/tmp/'
 CONN_MAX_AGE = 60
