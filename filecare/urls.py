@@ -21,5 +21,5 @@ urlpatterns = [
     url(r'^admin/', admin.site.urls),
     url(r'^list/(?P<uuid>[a-f0-9\-]{36})/$',list_view, name="list-dir"),
     url(r'^list/$', list_root),
-    url(r'^share/', include('portal.urls', namespace='portal'))
+    url(r'^share/', include('portal.urls', namespace='portal')),
 ]

@@ -2,6 +2,7 @@ from uuid import uuid4
 
 from django.conf import settings
 from django.db import models
+from django.urls import reverse
 
 
 class Node(models.Model):
@@ -39,3 +40,11 @@ class Node(models.Model):
         # Return in GigaBytes
         elif self.size > 1000 ** 3:
             return "{0:.2f} GB".format(self.size / 1000 ** 3)
+
+    def set_url(self, share):
+        if self.directory:
+            self.url = reverse('portal:show-sub-share',
+                               kwargs={'token': share.token.hex, 'node_token': self.uuid.hex})
+        elif not self.directory:
+            self.url = reverse('portal:get-file',
+                               kwargs={'token': share.token.hex, 'file_path': share.get_child_url(self)})
