@@ -38,15 +38,23 @@ class SharedNode(models.Model):
             # Instance was newly created
             path = join(settings.ROOT_SHARE_PATH, str(self))
 
-            if not os.path.isdir(path):
+            if not os.path.isdir(path) and (self.node.directory is False):
                 os.makedirs(path)
 
-            os.symlink(self.node.absolute_path, join(settings.ROOT_SHARE_PATH, str(self),
-                                                     os.path.basename(self.node.absolute_path)))
+            os.symlink(self.node.absolute_path, os.path.normpath(join(settings.ROOT_SHARE_PATH, str(self),
+                                                     os.path.basename(self.node.absolute_path))))
         super(SharedNode, self).save(*args, **kwargs)
 
     def get_child_url(self, node):
-        parent_abs_path = self.node.absolute_path
-        child_abs_path = node.absolute_path
-        relative_path = os.path.relpath(join(parent_abs_path, str(self)), child_abs_path)
-        return os.path.join(settings.ROOT_SHARE_PATH, relative_path)
+        if self.node.pk == node.pk:
+            relative_path = os.path.basename(node.absolute_path)
+        else:
+            parent_abs_path = self.node.absolute_path
+            child_abs_path = node.absolute_path
+            relative_path = os.path.relpath(child_abs_path, parent_abs_path)
+        return os.path.join(relative_path)
+
+    def is_ancestor_of_node(self, potential_child):
+        parent_path = self.node.absolute_path
+        child_path = potential_child.absolute_path
+        return os.path.commonprefix([parent_path, child_path]) is parent_path
