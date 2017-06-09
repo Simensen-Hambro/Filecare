@@ -1,0 +1,46 @@
+:root {
+    --blue: #2196F3;
+    --light-grey: #FAFAFA;
+    --light-grey-2: #f5f5f5;
+}
+
+html, body {
+    background-color: var(--light-grey);
+}
+
+nav.navbar {
+    background-color: var(--blue);
+}
+
+nav.navbar .navbar-brand, nav.navbar .navbar-brand:hover {
+    color: white;
+}
+
+.download-icon {
+    font-size: 1.7rem;
+}
+
+ol.breadcrumb li {
+    font-size: 1.5rem;
+}
+
+.table-container {
+    background-color: var(--light-grey-2);
+    padding: 10px;
+}
+
+.table-container table {
+    margin-bottom: 0;
+}
+
+.navbar-default .navbar-nav>li>a {
+    color: white;
+}
+
+.navbar-default .navbar-nav>li>a:hover {
+    color: #BDBDBD;
+}
+
+.login-link {
+    margin-right: 5px;
+}

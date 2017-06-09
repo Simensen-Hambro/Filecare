@@ -16,6 +16,11 @@ class Node(models.Model):
     def __str__(self):
         return self.absolute_path
 
+    def get_file_type(self):
+        if self.directory:
+            return 'dir'
+        else:
+            return self.absolute_path.split(".")[-1]
     def get_relative_path(self):
         root_path = settings.ROOT_DIRECTORY
         return self.absolute_path[len(root_path):]
