@@ -38,7 +38,7 @@ class SharedNode(models.Model):
             # Instance was newly created
             path = join(settings.ROOT_SHARE_PATH, str(self))
 
-            if not os.path.isdir(path) and (self.node.directory is False):
+            if not os.path.isdir(path):
                 os.makedirs(path)
 
             os.symlink(self.node.absolute_path, os.path.normpath(join(settings.ROOT_SHARE_PATH, str(self),
@@ -52,7 +52,7 @@ class SharedNode(models.Model):
             parent_abs_path = self.node.absolute_path
             child_abs_path = node.absolute_path
             relative_path = os.path.relpath(child_abs_path, parent_abs_path)
-        return os.path.join(relative_path)
+        return os.path.join(os.path.basename(parent_abs_path), relative_path)
 
     def is_ancestor_of_node(self, potential_child):
         parent_path = self.node.absolute_path

@@ -1,0 +1,27 @@
+{% for child in children %}
+  <tr>
+    {% if child.directory %}
+      <td><span class="glyphicon glyphicon-folder-open" aria-hidden="true"></span></td>
+      <td><a href="{{ child.url }}">{{ child.get_filename }}</a></td>
+    {% else %}
+      {% if child.get_file_type in 'mp4,mkv,avi'|slice:',' %}
+        <td><span class="glyphicon glyphicon-film" aria-hidden="true"></span></td>
+      {% elif child.get_file_type in 'sub'|slice:',' %}
+        <td><span class="glyphicon glyphicon-subtitles" aria-hidden="true"></span></td>
+      {% else %}
+        <td><span class="glyphicon glyphicon-file" aria-hidden="true"></span></td>
+      {% endif %}
+      <td>{{ child.get_filename }}</td>
+
+    {% endif %}
+    <td>{{ child.get_printable_size }}</td>
+    {% if not child.directory %}
+
+      <td><a href="{{ child.url }}"><span class="glyphicon glyphicon-download download-icon"
+          aria-hidden="true"></span></a>
+      </td>
+    {% else %}
+      <td><span></span></td>
+    {% endif %}
+  </tr>
+{% endfor %}

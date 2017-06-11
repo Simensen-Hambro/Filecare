@@ -21,6 +21,7 @@ class Node(models.Model):
             return 'dir'
         else:
             return self.absolute_path.split(".")[-1]
+
     def get_relative_path(self):
         root_path = settings.ROOT_DIRECTORY
         return self.absolute_path[len(root_path):]
@@ -46,10 +47,13 @@ class Node(models.Model):
         elif self.size > 1000 ** 3:
             return "{0:.2f} GB".format(self.size / 1000 ** 3)
 
-    def set_url(self, share):
-        if self.directory:
-            self.url = reverse('portal:show-sub-share',
-                               kwargs={'token': share.token.hex, 'node_token': self.uuid.hex})
-        elif not self.directory:
-            self.url = reverse('portal:get-file',
-                               kwargs={'token': share.token.hex, 'file_path': share.get_child_url(self)})
+    def set_url(self, share=None):
+        if share is None:
+            self.url = reverse('portal:admin-browse-node', kwargs={'node_uuid': self.uuid.hex})
+        else:
+            if self.directory:
+                self.url = reverse('portal:show-sub-share',
+                                   kwargs={'token': share.token.hex, 'node_uuid': self.uuid.hex})
+            elif not self.directory:
+                self.url = reverse('portal:get-file',
+                                   kwargs={'token': share.token.hex, 'file_path': share.get_child_url(self)})

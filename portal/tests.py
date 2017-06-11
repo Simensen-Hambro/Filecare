@@ -71,7 +71,7 @@ class SharedNodeTest(TestCase):
         pass
 
     def test_get_child_url(self):
-        pass
+        self.shared_file.get_child_url(self.movie_file_node)
 
     def tearDown(self):
         shutil.rmtree(TEST_ROOT)

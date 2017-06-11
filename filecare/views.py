@@ -45,6 +45,6 @@ def list_root(request):
 
     }
 
-    return render(request, 'filecare/index.html', context)
+    return render(request, 'filecare/browse.html', context)
 
 
