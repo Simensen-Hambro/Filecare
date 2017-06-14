@@ -58,14 +58,14 @@ class Node(models.Model):
 
     def set_url(self, share=None):
         if share is None:
-            self.url = reverse('portal:admin-browse-node', kwargs={'node_uuid': self.id.hex})
+            self.url = reverse('portal:admin-browse-node', kwargs={'node_uuid': self.id})
         else:
             if self.directory:
                 self.url = reverse('portal:show-sub-share',
-                                   kwargs={'token': share.token.hex, 'node_uuid': self.id.hex})
+                                   kwargs={'token': share.token, 'node_uuid': self.id})
             elif not self.directory:
                 self.url = reverse('portal:get-file',
-                                   kwargs={'token': share.token.hex, 'file_path': share.get_child_url(self)})
+                                   kwargs={'token': share.token, 'file_path': share.get_child_url(self)})
 
 
 
@@ -80,7 +80,7 @@ class SharedNode(models.Model):
     objects = SharedNodeManager()
 
     def __str__(self):
-        return self.token.hex
+        return self.token
 
     def delete(self, *args, **kwargs):
         os.unlink(join(settings.ROOT_SHARE_PATH, str(self), os.path.basename(self.node.absolute_path)))
