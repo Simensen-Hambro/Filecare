@@ -6,17 +6,24 @@ from django.http import Http404
 from django.shortcuts import get_object_or_404
 from django.shortcuts import render
 
-from filecare.models import Node
-from portal.models import SharedNode
+from portal.models import SharedNode, Node
+
+from rest_framework.views import APIView
+from portal.serializers import NodeSerializer, ShareSerializer
+from rest_framework.response import Response
+from rest_framework import status
 
 
 def get_path(node, stop_parent=None, share=None):
     links = []
+    if stop_parent is not None and (node.pk is stop_parent.pk):
+        node.set_url(share)
+        links.append({'name': 'Root', 'url': node.url})
+        return links
+
     if node.parent:
         parent = node
         while parent:
-            if parent is stop_parent:
-                break
             parent.set_url(share)
             if parent.parent:
                 links.append({'name': parent.get_filename(), 'url': parent.url})
@@ -24,9 +31,10 @@ def get_path(node, stop_parent=None, share=None):
             else:
                 links.append({'name': 'Root', 'url': parent.url})
                 break
-        links.reverse()
+
     else:
-        links.insert(0, {'name': 'Root', 'uuid': node.uuid})
+        links.append({'name': 'Root', 'uuid': node.id})
+    links.reverse()
     return links
 
 
@@ -45,7 +53,7 @@ def admin_browse(request, node_uuid=None):
     if node_uuid is None:
         node = Node.objects.get(parent__isnull=True)
     else:
-        node = get_object_or_404(Node, uuid=node_uuid)
+        node = get_object_or_404(Node, id=node_uuid)
     links = get_path(node)
     children = Node.objects.filter(parent=node)
 
@@ -62,7 +70,7 @@ def browse_share(request, token, node_uuid=None):
     share = get_object_or_404(SharedNode, token=token)
     node = share.node
     if node_uuid:
-        node = get_object_or_404(Node, uuid=node_uuid)
+        node = get_object_or_404(Node, id=node_uuid)
         if not share.is_ancestor_of_node(node):
             raise Http404
 
@@ -84,3 +92,36 @@ def browse_share(request, token, node_uuid=None):
     }
 
     return render(request, 'filecare/index.html', context)
+
+
+class ShareDetail(APIView):
+    """
+    Retrieve, update or delete a snippet instance.
+    """
+    def get_object(self, uuid):
+        try:
+            return SharedNode.objects.get(token=uuid)
+        except SharedNode.DoesNotExist:
+            raise Http404
+
+    def get(self, request, uuid, format=None):
+        share = self.get_object(uuid)
+        serializer = ShareSerializer(share)
+        return Response(serializer.data)
+
+    def delete(self, request, pk, format=None):
+        snippet = self.get_object(pk)
+        snippet.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class ShareList(APIView):
+    """
+    Retrieve, update or delete a snippet instance.
+    """
+    def post(self, request, format=None):
+        serializer = ShareSerializer(data=request.data, context={'request':request})
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

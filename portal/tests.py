@@ -56,12 +56,6 @@ class SharedNodeTest(TestCase):
         self.assertTrue(os.path.exists(join(settings.ROOT_SHARE_PATH, str(self.shared_file),
                                             os.path.basename(self.shared_file.node.absolute_path))))
 
-    def test_remove(self):
-        # Hashed dir is removed. Source remains safe.
-        self.shared_directory.delete()
-        self.assertFalse(os.path.exists(f'{join(settings.ROOT_SHARE_PATH, str(self.shared_directory))}'))
-        self.assertTrue(os.path.exists(self.movie_file))
-
     def test_prune_inactive_shares(self):
         SharedNode.objects.prune_expired()
         with self.assertRaises(SharedNode.DoesNotExist):
@@ -72,6 +66,18 @@ class SharedNodeTest(TestCase):
 
     def test_get_child_url(self):
         self.shared_file.get_child_url(self.movie_file_node)
+
+
+    def test_remove_dir(self):
+        # Hashed dir is removed. Source remains safe.
+        self.shared_directory.delete()
+        self.assertFalse(os.path.exists(f'{join(settings.ROOT_SHARE_PATH, str(self.shared_directory))}'))
+        self.assertTrue(os.path.exists(self.movie_dir))
+
+    def test_remove_file(self):
+        self.shared_file.delete()
+        self.assertFalse(os.path.exists(f'{join(settings.ROOT_SHARE_PATH, str(self.shared_file))}'))
+        self.assertTrue(os.path.exists(self.movie_file))
 
     def tearDown(self):
         shutil.rmtree(TEST_ROOT)

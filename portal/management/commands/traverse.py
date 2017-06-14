@@ -2,9 +2,9 @@ import os
 
 from django.conf import settings
 from django.core.management.base import BaseCommand
-from django.db.models import Max
+from uuid import uuid4
 
-from filecare.models import Node
+from portal.models import Node
 
 
 class Command(BaseCommand):
@@ -37,7 +37,7 @@ class Command(BaseCommand):
                     # If child didn't exist, create a new Node and set parent to current node
                     child_node = Node(pk=self.next_pk, absolute_path=child_path, size=0, parent_id=node.id,
                                       directory=True)
-                    self.next_pk += 1
+                    self.next_pk = uuid4()
                     self.new_nodes[child_path] = child_node
 
                 # Recursively traverse the tree by calculating filesize of the child folder
@@ -58,7 +58,7 @@ class Command(BaseCommand):
 
                 else:
                     child_node = Node(pk=self.next_pk, absolute_path=child_path, size=child_filesize, parent_id=node.id)
-                    self.next_pk += 1
+                    self.next_pk = uuid4()
                     self.new_nodes[child_path] = child_node
 
         # If the current directory has changed, update it and return the filesize
@@ -79,12 +79,7 @@ class Command(BaseCommand):
         self.nodes = dict([(x.absolute_path, x) for x in Node.objects.all()])
 
         # Starts at highest PK with bulk_insert of new nodes
-        self.next_pk = Node.objects.aggregate(Max('id'))['id__max']
-
-        if self.next_pk:
-            self.next_pk += 1
-        else:
-            self.next_pk = 1
+        self.next_pk = uuid4()
 
         # Set of all files that are gone from disk
         self.purge_nodes = set(self.nodes.keys())
@@ -98,7 +93,7 @@ class Command(BaseCommand):
             root_node = self.nodes[root]
         else:
             root_node = Node(pk=self.next_pk, absolute_path=root, size=0, parent_id=None, directory=True)
-            self.next_pk += 1
+            self.next_pk = uuid4()
             self.new_nodes[root] = root_node
 
         # Traverse the file structure starting with the root node
