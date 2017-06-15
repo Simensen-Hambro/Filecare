@@ -4,14 +4,14 @@ from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.http import Http404
 from django.shortcuts import get_object_or_404
-from django.shortcuts import render
+from django.shortcuts import render, redirect
+from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from portal.models import SharedNode, Node
-
-from rest_framework.views import APIView
-from portal.serializers import NodeSerializer, ShareSerializer
-from rest_framework.response import Response
-from rest_framework import status
+from portal.serializers import ShareSerializer
 
 
 def get_path(node, stop_parent=None, share=None):
@@ -43,6 +43,7 @@ def get_file(request, token, file_path):
     path = os.path.join(settings.ROOT_SHARE_PATH, token, file_path)
     return serve(request, os.path.basename(path), os.path.dirname(path))
 
+
 @login_required()
 def root(request):
     return admin_browse(request, None)
@@ -54,6 +55,10 @@ def admin_browse(request, node_uuid=None):
         node = Node.objects.get(parent__isnull=True)
     else:
         node = get_object_or_404(Node, id=node_uuid)
+        if not node.is_directory():
+            temp_node = SharedNode.objects.create(node=node, user=request.user)
+            return redirect(node.set_url(temp_node))
+
     links = get_path(node)
     children = Node.objects.filter(parent=node)
 
@@ -96,8 +101,10 @@ def browse_share(request, token, node_uuid=None):
 
 class ShareDetail(APIView):
     """
-    Retrieve, update or delete a snippet instance.
+    Retrieve, update or delete a Share instance.
     """
+    permission_classes = (IsAuthenticated,)
+
     def get_object(self, uuid):
         try:
             return SharedNode.objects.get(token=uuid)
@@ -117,10 +124,11 @@ class ShareDetail(APIView):
 
 class ShareList(APIView):
     """
-    Retrieve, update or delete a snippet instance.
+    Create share
     """
+
     def post(self, request, format=None):
-        serializer = ShareSerializer(data=request.data, context={'request':request})
+        serializer = ShareSerializer(data=request.data, context={'request': request})
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
