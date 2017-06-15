@@ -1,4 +1,5 @@
 import os
+from datetime import timedelta as dt
 from os.path import join
 from uuid import uuid4
 
@@ -6,17 +7,19 @@ from django.conf import settings
 from django.contrib.auth.models import User
 from django.db import models
 from django.urls import reverse
-from django.utils import timezone
+from django.utils import timezone as tz
+
+DEFAULT_EXPIRATION = 1  # Days into the future
 
 
 class SharedNodeManager(models.Manager):
     def prune_expired(self):
-        self.filter(expiration__lte=timezone.now()).delete()
+        self.filter(expiration__lte=tz.now()).delete()
 
 
 class Node(models.Model):
     absolute_path = models.CharField(max_length=1000)
-    parent = models.ForeignKey("Node", null=True, blank=True)
+    parent = models.ForeignKey("Node", null=True, blank=True, related_name='children')
     directory = models.BooleanField(default=False)
     size = models.BigIntegerField(default=0)
     id = models.UUIDField(default=uuid4, editable=False, primary_key=True)
@@ -58,21 +61,31 @@ class Node(models.Model):
 
     def set_url(self, share=None):
         if share is None:
-            self.url = reverse('portal:admin-browse-node', kwargs={'node_uuid': self.id})
+            self.url = reverse('portal:admin-browse-node',
+                               kwargs={'node_uuid': self.id})
         else:
             if self.directory:
                 self.url = reverse('portal:show-sub-share',
-                                   kwargs={'token': share.token, 'node_uuid': self.id})
+                                   kwargs={'token': share.token,
+                                           'node_uuid': self.id})
             elif not self.directory:
                 self.url = reverse('portal:get-file',
-                                   kwargs={'token': share.token, 'file_path': share.get_child_url(self)})
+                                   kwargs={'token': share.token,
+                                           'file_path': share.get_child_url(self)})
+        return self.url
 
+    def is_directory(self):
+        return self.directory
+
+
+def default_expiration_date():
+    return tz.now() + dt(days=DEFAULT_EXPIRATION)
 
 
 class SharedNode(models.Model):
     token = models.UUIDField(default=uuid4, editable=False)
     created = models.DateField(auto_now=False, auto_now_add=True)
-    expiration = models.DateField(auto_now=False, auto_now_add=False)
+    expiration = models.DateTimeField(auto_now=False, auto_now_add=False, default=default_expiration_date)
 
     node = models.ForeignKey(Node)
     user = models.ForeignKey(User)
@@ -80,7 +93,7 @@ class SharedNode(models.Model):
     objects = SharedNodeManager()
 
     def __str__(self):
-        return self.token
+        return str(self.token)
 
     def delete(self, *args, **kwargs):
         os.unlink(join(settings.ROOT_SHARE_PATH, str(self), os.path.basename(self.node.absolute_path)))
@@ -101,17 +114,15 @@ class SharedNode(models.Model):
 
     def get_child_url(self, node):
         if self.node.pk == node.pk:
-            # relative_path = os.path.basename(node.absolute_path)
             parent_abs_path = os.path.basename(node.absolute_path)
             relative_path = ''
         else:
             parent_abs_path = self.node.absolute_path
             child_abs_path = node.absolute_path
             relative_path = os.path.relpath(child_abs_path, parent_abs_path)
-        return os.path.join(os.path.basename(parent_abs_path), relative_path)
+        return os.path.join(os.path.basename(parent_abs_path), relative_path)[:-1]
 
     def is_ancestor_of_node(self, potential_child):
         parent_path = self.node.absolute_path
         child_path = potential_child.absolute_path
         return os.path.commonprefix([parent_path, child_path]) is parent_path
-
