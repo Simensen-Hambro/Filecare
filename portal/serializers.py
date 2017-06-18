@@ -72,7 +72,7 @@ class ShareSerializer(serializers.ModelSerializer):
 
     def get_node_levels(self, obj):
         # TODO: Refactor code from get_relative_node so we dont do any repeating queries
-        branch = get_branch_path(self.node, obj)
+        branch = get_branch_path(obj.node, obj)
         serializer_context = {'request': self.context.get('request'),
                               'share': obj}
         serializer = SubNodeSerializer(branch, context=serializer_context, many=True)
