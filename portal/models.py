@@ -39,7 +39,11 @@ class Node(models.Model):
         return self.absolute_path[len(root_path):]
 
     def get_filename(self):
-        return self.absolute_path.split("/")[-1]
+        return os.path.basename(self.absolute_path)
+
+    def get_file_type(self):
+        # https://stackoverflow.com/a/678242
+        return os.path.splitext(self.get_filename())[1][1:]
 
     def get_printable_size(self):
 
@@ -61,13 +65,13 @@ class Node(models.Model):
 
     def set_url(self, share=None):
         if share is None:
-            self.url = reverse('portal:admin-browse-node',
-                               kwargs={'node_uuid': self.id})
+            self.url = reverse('portal:node-detail',
+                               kwargs={'pk': self.id})
         else:
             if self.directory:
-                self.url = reverse('portal:show-sub-share',
-                                   kwargs={'token': share.token,
-                                           'node_uuid': self.id})
+                self.url = reverse('portal:share-sub-node',
+                                   kwargs={'uuid': share.token,
+                                           'node': self.id})
             elif not self.directory:
                 self.url = reverse('portal:get-file',
                                    kwargs={'token': share.token,
@@ -120,7 +124,7 @@ class SharedNode(models.Model):
             parent_abs_path = self.node.absolute_path
             child_abs_path = node.absolute_path
             relative_path = os.path.relpath(child_abs_path, parent_abs_path)
-        return os.path.join(os.path.basename(parent_abs_path), relative_path)[:-1]
+        return os.path.join(os.path.basename(parent_abs_path), relative_path) # :-1]
 
     def is_ancestor_of_node(self, potential_child):
         parent_path = self.node.absolute_path
