@@ -8,7 +8,7 @@ from django.core.management import call_command
 from django.test import TestCase, override_settings
 from django.utils import timezone
 
-from filecare.models import Node
+from portal.models import Node
 from portal.models import SharedNode
 
 TEST_ROOT = join(settings.BASE_DIR, '.TESTING_DELETE_ME', )
@@ -66,7 +66,6 @@ class SharedNodeTest(TestCase):
 
     def test_get_child_url(self):
         self.shared_file.get_child_url(self.movie_file_node)
-
 
     def test_remove_dir(self):
         # Hashed dir is removed. Source remains safe.
