@@ -5,10 +5,11 @@ from django.http import Http404
 from rest_framework import generics
 from rest_framework import mixins
 from rest_framework import status
+from rest_framework.decorators import permission_classes
 from rest_framework.generics import (ListAPIView
                                      )
 from rest_framework.permissions import IsAdminUser
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -22,12 +23,11 @@ def get_file(request, token, file_path):
     return serve(request, os.path.basename(path), os.path.dirname(path))
 
 
+@permission_classes((IsAuthenticatedOrReadOnly,))
 class ShareDetail(APIView):
     """
     Retrieve, update or delete a Share instance.
     """
-    permission_classes = (IsAuthenticated,)
-
     def get_object(self, uuid, node=None):
         try:
             return SharedNode.objects.get(token=uuid)
@@ -58,14 +58,12 @@ class ShareDetail(APIView):
 class NodeListAPIView(ListAPIView):
     queryset = Node.objects.filter(parent__isnull=True)
     serializer_class = NodeSerializer
-    permission_classes = (IsAdminUser,)
 
 
 class NodeDetail(mixins.RetrieveModelMixin,
                  generics.GenericAPIView):
     queryset = Node.objects.all()
     serializer_class = NodeSerializer
-    permission_classes = (IsAdminUser,)
 
     def get(self, request, *args, **kwargs):
         return self.retrieve(request, *args, **kwargs)
