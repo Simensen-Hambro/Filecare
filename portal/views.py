@@ -13,7 +13,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from portal.models import SharedNode, Node
-from portal.serializers import ShareSerializer, NodeSerializer, CreateShareSerializer
+from portal.serializers import ShareSerializer, NodeSerializer
 
 
 def get_file(request, token, file_path):
