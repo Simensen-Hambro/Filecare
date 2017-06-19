@@ -13,7 +13,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from portal.models import SharedNode, Node
-from portal.serializers import ShareSerializer, NodeSerializer
+from portal.serializers import ShareSerializer, NodeSerializer, CreateShareSerializer
 
 
 def get_file(request, token, file_path):
@@ -34,21 +34,18 @@ class ShareDetail(APIView):
         except SharedNode.DoesNotExist:
             raise Http404
 
-    def get(self, request, uuid, node=None, format=None):
-        share = self.get_object(uuid)
-        serializer = ShareSerializer(share, context={'node': node})
-        return Response(serializer.data)
+    def get(self, request, uuid=None, node=None, format=None):
+        try:
+            share = self.get_object(uuid)
+            serializer = ShareSerializer(share, context={'node': node})
+            return Response(serializer.data)
+        except SharedNode.DoesNotExist:
+            return None
 
     def delete(self, request, pk, format=None):
         snippet = self.get_object(pk)
         snippet.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
-
-
-class ShareCreate(APIView):
-    """
-    Create share
-    """
 
     def post(self, request, format=None):
         serializer = ShareSerializer(data=request.data, context={'request': request})
@@ -68,6 +65,7 @@ class NodeDetail(mixins.RetrieveModelMixin,
                  generics.GenericAPIView):
     queryset = Node.objects.all()
     serializer_class = NodeSerializer
+    permission_classes = (IsAdminUser,)
 
     def get(self, request, *args, **kwargs):
         return self.retrieve(request, *args, **kwargs)

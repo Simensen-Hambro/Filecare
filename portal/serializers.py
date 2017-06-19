@@ -46,12 +46,13 @@ class ShareSerializer(serializers.ModelSerializer):
     )
 
     # node = NodeSerializer(many=False, read_only=True)
-    node = serializers.SerializerMethodField('get_relative_node')
+    nodes = serializers.SerializerMethodField('get_relative_node', read_only=True)
     levels = serializers.SerializerMethodField('get_node_levels', read_only=True)
+    node = serializers.PrimaryKeyRelatedField(many=False, write_only=True, queryset=Node.objects.all())
 
     class Meta:
         model = SharedNode
-        fields = ('token', 'expiration', 'node', 'levels', 'user')
+        fields = ('token', 'expiration', 'nodes', 'levels', 'user', 'node')
 
     def get_relative_node(self, obj):
         node = self.context.get('node')
@@ -63,8 +64,6 @@ class ShareSerializer(serializers.ModelSerializer):
             nodes = Node.objects.filter(parent__id=node)
         except Node.DoesNotExist:
             nodes = [obj.node]
-
-
 
         serializer_context = {'request': None, 'share': obj}
         serializer = SubNodeSerializer(nodes, context=serializer_context, many=True)
