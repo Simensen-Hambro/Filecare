@@ -2,6 +2,7 @@ from rest_framework import serializers
 
 from portal.helpers import get_branch_path
 from portal.models import SharedNode, Node
+from rest_framework.reverse import reverse
 
 
 class SubNodeSerializer(serializers.ModelSerializer):
@@ -39,7 +40,7 @@ class NodeSerializer(serializers.ModelSerializer):
         return serializer.data
 
 
-class ShareSerializer(serializers.ModelSerializer):
+class ShareSerializer(serializers.HyperlinkedModelSerializer):
     user = serializers.PrimaryKeyRelatedField(
         read_only=True,
         default=serializers.CurrentUserDefault()
@@ -49,21 +50,18 @@ class ShareSerializer(serializers.ModelSerializer):
     nodes = serializers.SerializerMethodField('get_relative_node', read_only=True)
     levels = serializers.SerializerMethodField('get_node_levels', read_only=True)
     node = serializers.PrimaryKeyRelatedField(many=False, write_only=True, queryset=Node.objects.all())
+    url = serializers.HyperlinkedIdentityField(view_name='portal:share-root', lookup_field='token', lookup_url_kwarg='uuid', read_only=True, many=False)
+
+    view_name = 'root-share'
 
     class Meta:
         model = SharedNode
-        fields = ('token', 'expiration', 'nodes', 'levels', 'user', 'node')
+        fields = ('token', 'expiration', 'nodes', 'levels', 'user', 'node', 'url')
 
     def get_relative_node(self, obj):
-        node = self.context.get('node')
-        try:
-            parent = Node.objects.get(id=node)
-            self.node = parent
-            if not obj.is_ancestor_of_node(parent):
-                nodes = [obj.node]
-            nodes = Node.objects.filter(parent__id=node)
-        except Node.DoesNotExist:
-            nodes = [obj.node]
+        leaf = self.get_node_obj(obj)
+        #self.node = leaf
+        nodes = Node.objects.filter(parent__id=leaf.id)
 
         serializer_context = {'request': None, 'share': obj}
         serializer = SubNodeSerializer(nodes, context=serializer_context, many=True)
@@ -71,8 +69,31 @@ class ShareSerializer(serializers.ModelSerializer):
 
     def get_node_levels(self, obj):
         # TODO: Refactor code from get_relative_node so we dont do any repeating queries
-        branch = get_branch_path(obj.node, obj)
+
+        leaf = self.get_node_obj(obj)
+        branch = get_branch_path(leaf, obj.node, obj)
         serializer_context = {'request': self.context.get('request'),
                               'share': obj}
         serializer = SubNodeSerializer(branch, context=serializer_context, many=True)
         return serializer.data
+
+    def get_node_obj(self, obj):
+        try:
+            return self.node
+        except AttributeError:
+            node = self.context.get('node')
+            try:
+                self.node = Node.objects.get(id=node)
+                if not obj.is_ancestor_of_node(self.node):
+                    self.node = obj.node
+                return self.node
+            except Node.DoesNotExist:
+                pass
+
+        return obj.node
+
+    def get_url(self, obj, view_name, request, format):
+        url_kwargs = {
+            'uuid': obj.pk,
+        }
+        return reverse('root-share', kwargs=url_kwargs, request=request, format=format)

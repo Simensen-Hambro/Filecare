@@ -37,14 +37,14 @@ class ShareDetail(APIView):
     def get(self, request, uuid=None, node=None, format=None):
         try:
             share = self.get_object(uuid)
-            serializer = ShareSerializer(share, context={'node': node})
+            serializer = ShareSerializer(share, context={'node': node, 'request': request})
             return Response(serializer.data)
         except SharedNode.DoesNotExist:
             return None
 
-    def delete(self, request, pk, format=None):
-        snippet = self.get_object(pk)
-        snippet.delete()
+    def delete(self, request, uuid, format=None, node=None):
+        share = self.get_object(uuid)
+        share.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     def post(self, request, format=None):
