@@ -61,7 +61,7 @@ class ShareSerializer(serializers.HyperlinkedModelSerializer):
 
     class Meta:
         model = SharedNode
-        fields = ('token', 'expiration', 'children', 'levels', 'user', 'node')
+        fields = ('token', 'expiration', 'children', 'levels', 'user', 'node', 'url')
 
     def get_relative_node(self, obj):
         leaf = self.get_node_obj(obj)
