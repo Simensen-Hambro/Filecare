@@ -6,8 +6,7 @@ from rest_framework import generics
 from rest_framework import mixins
 from rest_framework import status
 from rest_framework.decorators import permission_classes
-from rest_framework.generics import (ListAPIView
-                                     )
+from rest_framework.generics import (ListAPIView)
 from rest_framework.permissions import IsAdminUser
 from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
 from rest_framework.response import Response
@@ -28,6 +27,7 @@ class ShareDetail(APIView):
     """
     Retrieve, update or delete a Share instance.
     """
+
     def get_object(self, uuid, node=None):
         try:
             return SharedNode.objects.get(token=uuid)
@@ -62,7 +62,7 @@ class NodeListAPIView(ListAPIView):
 
 class NodeDetail(mixins.RetrieveModelMixin,
                  generics.GenericAPIView):
-    queryset = Node.objects.all()
+    queryset = Node.objects.all().order_by('get_filename')
     serializer_class = NodeSerializer
 
     def get(self, request, *args, **kwargs):
