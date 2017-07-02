@@ -1,27 +1,24 @@
 from rest_framework import serializers
+from rest_framework.reverse import reverse
 
 from portal.helpers import get_branch_path
 from portal.models import SharedNode, Node
-from rest_framework.reverse import reverse
 
 
-class SubNodeSerializer(serializers.ModelSerializer):
-    url = serializers.SerializerMethodField('get_abs_url')
+class SubNodeSerializer(serializers.HyperlinkedModelSerializer):
     size = serializers.CharField(source='get_printable_size')
     filename = serializers.CharField(source='get_filename')
-
-    def get_abs_url(self, obj):
-        share = self.context.get('share')
-        return obj.set_url(share)
+    url = serializers.HyperlinkedIdentityField(view_name='portal:node-detail')
 
     class Meta:
         model = Node
-        fields = ('size', 'id', 'filename', 'directory', 'url')
+        fields = ('size', 'filename', 'id', 'filename', 'directory', 'url')
+        view_name = 'kek'
 
 
-class NodeSerializer(serializers.ModelSerializer):
+class NodeSerializer(serializers.HyperlinkedModelSerializer):
     children = SubNodeSerializer(many=True, read_only=True)
-    url = serializers.SerializerMethodField('get_rep_url')
+    url = serializers.HyperlinkedIdentityField(view_name='portal:node-detail')
     levels = serializers.SerializerMethodField('get_node_levels')
     size = serializers.CharField(source='get_printable_size')
     filename = serializers.CharField(source='get_filename')
@@ -30,18 +27,21 @@ class NodeSerializer(serializers.ModelSerializer):
         model = Node
         fields = ('size', 'id', 'filename', 'children', 'url', 'levels')
 
-    def get_rep_url(self, obj):
-        share = self.context.get('share')
-        return obj.set_url(share)
-
     def get_node_levels(self, obj):
-        # TODO: Refactor code from get_relative_node so we dont do any repeating queries
         branch = get_branch_path(obj)
-        share = self.context.get('share')
-        serializer_context = {'request': self.context.get('request'),
-                              'share': share}
-        serializer = SubNodeSerializer(branch, context=serializer_context, many=True)
-        return serializer.data
+        serializer_context = {'request': self.context.get('request')}
+        return SubNodeSerializer(branch, context=serializer_context, many=True).data
+
+
+class ShareSubNodeSerializer(SubNodeSerializer):
+    url = serializers.SerializerMethodField()
+
+    def get_url(self, obj):
+        url_kwargs = {
+            'uuid': self.context.get('share').token,
+            'node': obj.id
+        }
+        return reverse('portal:share-sub-node', kwargs=url_kwargs, request=self.context.get('request'))
 
 
 class ShareSerializer(serializers.HyperlinkedModelSerializer):
@@ -50,14 +50,13 @@ class ShareSerializer(serializers.HyperlinkedModelSerializer):
         default=serializers.CurrentUserDefault()
     )
 
-    # node = NodeSerializer(many=False, read_only=True)
     children = serializers.SerializerMethodField('get_relative_node', read_only=True)
     levels = serializers.SerializerMethodField('get_node_levels', read_only=True)
     node = serializers.PrimaryKeyRelatedField(many=False, write_only=True, queryset=Node.objects.all())
-    url = serializers.HyperlinkedIdentityField(view_name='portal:share-root', lookup_field='token', lookup_url_kwarg='uuid', read_only=True, many=False)
+    url = serializers.HyperlinkedIdentityField(view_name='portal:share-root', lookup_field='token',
+                                               lookup_url_kwarg='uuid', read_only=True, many=False)
 
-    view_name = 'root-share'
-
+    view_name = 'portal:share-root'
 
     class Meta:
         model = SharedNode
@@ -65,20 +64,19 @@ class ShareSerializer(serializers.HyperlinkedModelSerializer):
 
     def get_relative_node(self, obj):
         leaf = self.get_node_obj(obj)
-        #self.node = leaf
+        # self.node = leaf
         nodes = Node.objects.filter(parent__id=leaf.id)
 
-        serializer_context = {'request': None, 'share': obj}
-        serializer = SubNodeSerializer(nodes, context=serializer_context, many=True)
+        serializer_context = {'request': self.context.get('request'), 'share': obj}
+        serializer = ShareSubNodeSerializer(nodes, context=serializer_context, many=True)
         return serializer.data
 
     def get_node_levels(self, obj):
-        # TODO: Refactor code from get_relative_node so we dont do any repeating queries
         leaf = self.get_node_obj(obj)
-        branch = get_branch_path(leaf, obj.node, obj)
+        branch = get_branch_path(leaf, obj.node)
         serializer_context = {'request': self.context.get('request'),
                               'share': obj}
-        serializer = SubNodeSerializer(branch, context=serializer_context, many=True)
+        serializer = ShareSubNodeSerializer(branch, context=serializer_context, many=True)
         return serializer.data
 
     def get_node_obj(self, obj):
@@ -100,4 +98,4 @@ class ShareSerializer(serializers.HyperlinkedModelSerializer):
         url_kwargs = {
             'uuid': obj.pk,
         }
-        return reverse('root-share', kwargs=url_kwargs, request=request, format=format)
+        return reverse(view_name=view_name, kwargs=url_kwargs, request=request, format=format)

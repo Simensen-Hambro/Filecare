@@ -63,7 +63,7 @@ class Node(models.Model):
         elif self.size > 1000 ** 3:
             return "{0:.2f} GB".format(self.size / 1000 ** 3)
 
-    def set_url(self, share=None):
+    def set_url1(self, share=None):
         if share is None:
             self.url = reverse('portal:node-detail',
                                kwargs={'pk': self.id})
