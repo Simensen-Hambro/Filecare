@@ -20,10 +20,10 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # See https://docs.djangoproject.com/en/1.11/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'f=0*83l!vb@ln%-&bn%6*dkw0@*@0%6hlgcx*o8bym9zmx)nn-'
+SECRET_KEY = os.environ.get('SECRET_KEY') or 'f=0*83l!vb@ln%-&bn%6*dkw0@*@0%6hlgcx*o8bym9zmx)nn-'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = True or (os.environ.get('DEBUG') == 'True') or False
 
 ALLOWED_HOSTS = ['*']
 
@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework.authtoken',
     'corsheaders',
+    #'haystack',
 ]
 
 MIDDLEWARE = [
@@ -58,6 +59,13 @@ MIDDLEWARE = [
 CORS_ORIGIN_WHITELIST = (
     'localhost:3000',
     '127.0.0.1:3000'
+    'node:3000'
+    'localhost:80',
+    '127.0.0.1:80'
+    '127.0.0.1',
+    'localhost',
+    'nginx',
+    '172.22.0.1',
 )
 
 ROOT_URLCONF = 'filecare.urls'
@@ -92,7 +100,7 @@ DATABASES = {
 }
 '''
 
-if os.environ.get('SIMPLE_DATABASE'):
+if os.environ.get('SIMPLE_DATABASE') or True:
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
@@ -103,10 +111,10 @@ else:
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql_psycopg2',
-            'NAME': 'filecare',
-            'USER': 'martsime',
-            'PASSWORD': '',
-            'HOST': 'localhost',
+            'NAME': os.environ.get('POSTGRES_DB'),
+            'USER': os.environ.get('POSTGRES_USER'),
+            'PASSWORD': os.environ.get('POSTGRES_PASSWORD'),
+            'HOST': 'database',
             'PORT': '5432',
         }
     }
@@ -160,6 +168,9 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/1.11/howto/static-files/
 
 STATIC_URL = '/static/'
-ROOT_DIRECTORY = os.environ.get('ROOT_DIRECTORY') or '/tmp/'
-ROOT_SHARE_PATH = os.environ.get('ROOT_SHARE_PATH') or '/tmp/'
+STATIC_ROOT = os.path.join(BASE_DIR, "static")
+
+
+ROOT_DIRECTORY = os.environ.get('ROOT_DIRECTORY') or '/tmp'
+ROOT_SHARE_PATH = os.environ.get('ROOT_SHARE_PATH') or '/tmp'
 CONN_MAX_AGE = 60
