@@ -63,21 +63,6 @@ class Node(models.Model):
         elif self.size > 1000 ** 3:
             return "{0:.2f} GB".format(self.size / 1000 ** 3)
 
-    def set_url1(self, share=None):
-        if share is None:
-            self.url = reverse('portal:node-detail',
-                               kwargs={'pk': self.id})
-        else:
-            if self.directory:
-                self.url = reverse('portal:share-sub-node',
-                                   kwargs={'uuid': share.token,
-                                           'node': self.id})
-            elif not self.directory:
-                self.url = reverse('portal:get-file',
-                                   kwargs={'token': share.token,
-                                           'file_path': share.get_child_url(self)})
-        return self.url
-
     def is_directory(self):
         return self.directory
 

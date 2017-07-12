@@ -2,13 +2,14 @@ import os
 
 from django.conf import settings
 from django.http import Http404
+from django.shortcuts import redirect
+from django.urls import reverse
 from rest_framework import generics
 from rest_framework import mixins
 from rest_framework import status
 from rest_framework.decorators import permission_classes
 from rest_framework.generics import (ListAPIView)
-from rest_framework.permissions import IsAdminUser
-from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
+from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -73,4 +74,15 @@ class NodeDetail(mixins.RetrieveModelMixin,
             instance = Node.objects.get(parent__isnull=True)
             serializer = self.get_serializer(instance)
             return Response(serializer.data)
-        return super().retrieve(request, *args, **kwargs)
+        r = super().retrieve(request, *args, **kwargs)
+        return r
+
+
+class PreDownloadNode(APIView):
+    def get(self, request, pk, format=None):
+        node = Node.objects.get(pk=pk)
+        if not node.is_directory():
+            share = SharedNode.objects.create(node=node, user=request.user)
+            return redirect(reverse('portal:get-file',
+                                    kwargs={'token': share.token,
+                                            'file_path': share.get_child_url(node)}))
