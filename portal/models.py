@@ -19,7 +19,7 @@ class SharedNodeManager(models.Manager):
 
 class Node(models.Model):
     absolute_path = models.CharField(max_length=1000)
-    parent = models.ForeignKey("Node", null=True, blank=True, related_name='children')
+    parent = models.ForeignKey("Node", on_delete=models.CASCADE, null=True, blank=True, related_name='children')
     directory = models.BooleanField(default=False)
     size = models.BigIntegerField(default=0)
     id = models.UUIDField(default=uuid4, editable=False, primary_key=True)
@@ -76,8 +76,8 @@ class SharedNode(models.Model):
     created = models.DateField(auto_now=False, auto_now_add=True)
     expiration = models.DateTimeField(auto_now=False, auto_now_add=False, default=default_expiration_date)
 
-    node = models.ForeignKey(Node)
-    user = models.ForeignKey(User)
+    node = models.ForeignKey(Node, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
 
     objects = SharedNodeManager()
 

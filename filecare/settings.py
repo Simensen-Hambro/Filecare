@@ -168,8 +168,8 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, "static")
-
-
-ROOT_DIRECTORY = os.environ.get('ROOT_DIRECTORY') or '/tmp'
-ROOT_SHARE_PATH = os.environ.get('ROOT_SHARE_PATH') or '/tmp'
+ROOT_DIRECTORY = os.environ.get('ROOT_DIRECTORY') or '/tmp/'
+ROOT_SHARE_PATH = os.environ.get('ROOT_SHARE_PATH') or '/tmp/'
 CONN_MAX_AGE = 60
+
+DATA_UPLOAD_MAX_NUMBER_FIELDS = None
