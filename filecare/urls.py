@@ -20,6 +20,6 @@ from rest_framework.authtoken.views import obtain_auth_token
 
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
-    url(r'^', include('portal.urls', namespace='portal')),
+    url(r'^', include(('portal.urls', 'portal'), namespace='portal')),
     url(r'^obtain-auth-token/$', obtain_auth_token, name='login'),
 ]
